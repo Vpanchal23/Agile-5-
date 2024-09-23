@@ -1,0 +1,5 @@
+681146 Walter HighInterestSavings 188500
+429043 Walter CertificateOfDeposit 100000
+618577 Landon Checking 150000
+640203 Drb Checking 1
+749186 Danielle CertificateOfDeposit 5000
