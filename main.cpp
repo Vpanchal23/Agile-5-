@@ -9,93 +9,190 @@
 
 using namespace std;
 
-// Display the main menu with numbered options
-void displayMenu() {
-    clearScreen();
+int main()
+{
+	string arr[10];
+	short acctNumDataBase;
+	LinkedList accountsList;  // Employee's working list
+	const string filename = "accounts.txt";  // File where data is stored
 
-    string borderTop = "╔═══════════════════════════════════════════════════════════════════════╗\n";
-    string borderBottom = "╚═══════════════════════════════════════════════════════════════════════╝\n";
+	acctNumDataBase = 0;
+	// Load accounts from accounts.txt
+	accountsList.loadFromFile(filename, arr, &acctNumDataBase);
 
-    cout << "\033[1;34m";  // Bold Blue text
-    cout << borderTop;
-    cout << "║" << centerText("Banking System Menu", 71) << "║\n";
-    cout << borderBottom;
-    cout << "\033[0m";  // Reset text
+	// Seed the random number generator once
+	srand(static_cast<unsigned int>(time(nullptr)));
 
-    cout << "\033[1;36m";  // Cyan text for menu
-    cout << "║" << left << setw(71) << " 1. View Accounts" << "║\n";
-    cout << "║" << left << setw(71) << " 2. Add New Account" << "║\n";
-    cout << "║" << left << setw(71) << " 3. Edit Account Balance" << "║\n";
-    cout << "║" << left << setw(71) << " 4. Delete Account" << "║\n";
-    cout << "║" << left << setw(71) << " 5. Deposit" << "║\n";
-    cout << "║" << left << setw(71) << " 6. Withdraw" << "║\n";
-    cout << "║" << left << setw(71) << " 7. Exit Program" << "║\n";
-    cout << borderBottom;
-    cout << "\033[1;33m";  // Yellow text for input prompt
-    cout << "Choose an option (1-7): ";
-    cout << "\033[0m";  // Reset text
-}
+	Node* current;
+	string name;
+	string psswrd;
+	bool invalid;
+	char choice;
+	int userChoice;
 
-int main() {
-    LinkedList employeeList;  // Employee's working list
-    const string filename = "accounts.txt";  // File where data is stored
+	do
+	{
+		invalid = true;
+		cout << "LOGIN\n";
+		cout << "User name: ";
+		getline(cin, name);
 
-    // Load accounts from accounts.txt
-    employeeList.loadFromFile(filename);
+		cout << "Password: ";
+		getline(cin, psswrd);
 
-    int choice = 0;
-    bool exitProgram = false;
+		current = accountsList.confirmAccount(name, psswrd);
 
-    // Seed the random number generator once
-    srand(static_cast<unsigned int>(time(nullptr)));
+		if(current != nullptr)
+		{
+			invalid = false;
+		}
+		else
+		{
+			do
+			{
+				cout << "\nIncorrect username or password"
+					 << "\nWould you like to try again (type N to exit)? ";
+				cin.get(choice);
+				cin.ignore(1000, '\n');
 
-    while (!exitProgram) {
-        displayMenu();
-        cin >> choice;
+				choice = tolower(choice);
 
-        if (cin.fail() || choice < 1 || choice > 7) {
-            cin.clear();
-            cin.ignore(10000, '\n');
-            cout << "\033[1;31mInvalid input. Please enter a number between 1 and 7.\033[0m\n";
-            cout << "\n\033[1;33mPress Enter to return to the menu...\033[0m";
-            cin.ignore();
-            cin.get();
-            continue;
-        }
+				switch(choice)
+				{
+					case 'y':
+						break;
+					case 'n':
+						invalid = false;
+						break;
+				}
+			}while(choice != 'y' &&
+				   choice != 'n');
+		}
+	}while(invalid);
 
-        switch (choice) {
-            case 1:
-                handleViewAccounts(employeeList);
-                break;
-            case 2:
-                handleAddAccount(employeeList);
-                break;
-            case 3:
-                handleEditAccount(employeeList);
-                break;
-            case 4:
-                handleDeleteAccount(employeeList);
-                break;
-            case 5:
-                handleDeposit(employeeList);
-                break;
-            case 6:
-                handleWithdraw(employeeList);
-                break;
-            case 7:
-                clearScreen();
-                cout << "\033[1;32mExiting program and saving changes...\033[0m\n";
-                employeeList.convertLinkedListToTextFile(filename);
-                exitProgram = true;
-                break;
-        }
+	if(current != nullptr)
+	{
+		switch((current->employee))
+		{
+			case 0:
+				invalid = true;
+				do
+				{
+					displayCustomerMenu();
+					cin >> userChoice;
 
-        if (!exitProgram) {
-            cout << "\n\033[1;33mPress Enter to return to the menu...\033[0m";
-            cin.ignore();
-            cin.get();
-        }
-    }
+					if (cin.fail() || userChoice < 1 || userChoice > 7)
+					{
+						cin.clear();
+						cin.ignore(10000, '\n');
+						cout << "\033[1;31mInvalid input. Please enter a number between 1 and 7.\033[0m\n";
+						cout << "\n\033[1;33mPress Enter to return to the menu...\033[0m";
+						cin.ignore(1000, '\n');
+					}
+
+						switch (userChoice)
+						{
+							case 1:
+								handleViewMyAccounts(current);
+								break;
+							case 2:
+								handleAddAccount(accountsList, current, &acctNumDataBase, filename);
+								break;
+							case 3:
+								handleDeleteAccount(accountsList, current, current->employee, filename);
+								break;
+							case 4:
+								handleDeposit(accountsList, current, current->employee, filename);
+								break;
+							case 5:
+								handleWithdraw(accountsList, current, current->employee, filename);
+								break;
+							case 6:
+								handleFundTransfers(accountsList, current, current->employee, filename);
+								break;
+							case 7:
+								clearScreen();
+								cout << "\033[1;32mExiting program ...\033[0m\n";
+						//		accountsList.convertLinkedListToTextFile(filename);
+								invalid = false;
+								break;
+						}
+
+				}while(invalid);
+				break;
+			default:
+				invalid = true;
+				do
+				{
+					displayEmployeeMenu();
+					cin >> userChoice;
+
+					if (cin.fail() || userChoice < 1 || userChoice > 8)
+					{
+						cin.clear();
+						cin.ignore(10000, '\n');
+						cout << "\033[1;31mInvalid input. Please enter a number between 1 and 8.\033[0m\n";
+						cout << "\n\033[1;33mPress Enter to return to the menu...\033[0m";
+						cin.ignore(1000, '\n');
+					}
+						switch (userChoice)
+						{
+							case 1:
+								handleViewAccounts(accountsList);
+								break;
+							case 2:
+							{
+								clearScreen();
+								string borderTop1 = "╔═══════════════════════════════════════════════════════════════════════╗\n";
+								string borderBottom1 = "╚═══════════════════════════════════════════════════════════════════════╝\n";
+
+								cout << "\033[1;34m";  // Bold Blue text
+								cout << borderTop1;
+								cout << "║" << centerText("Choose Customer Account", 71) << "║\n";
+								cout << borderBottom1;
+								cout << "\033[0m";  // Reset text
+
+								// Display accounts for selection
+								cout << "\033[1;36mCustomer Accounts:\033[0m\n";
+								accountsList.displayLoginAccounts();
+
+								string numberToFind;
+
+								cout << "\nEnter the login account ID number to which you want to add a bank account: ";
+								cin >> numberToFind;
+								cin.ignore(1000, '\n');
+
+								Node* current2 = accountsList.findLoginAccount(numberToFind);
+
+								handleAddAccount(accountsList, current2, &acctNumDataBase, filename);
+								break;
+							}
+							case 3:
+								handleEditAccount(accountsList);
+								break;
+							case 4:
+								handleDeleteAccount(accountsList, current, current->employee, filename);
+								break;
+							case 5:
+								handleDeposit(accountsList, current, current->employee, filename);
+								break;
+							case 6:
+								handleWithdraw(accountsList, current, current->employee, filename);
+								break;
+							case 7:
+								handleFundTransfers(accountsList, current, current->employee, filename);
+								break;
+							case 8:
+								clearScreen();
+								cout << "\033[1;32mExiting program ...\033[0m\n";
+						//		accountsList.convertLinkedListToTextFile(filename);
+								invalid = false;
+								break;
+						}
+
+				}while(invalid);
+		}
+	}
 
     return 0;
 }

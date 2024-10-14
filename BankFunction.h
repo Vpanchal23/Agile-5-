@@ -22,4 +22,6 @@ void handleDeposit(LinkedList& accountsList);
 // Withdraw function
 void handleWithdraw(LinkedList& accountsList);
 
+void LoginSystem();
+
 #endif // BANKFUNCTIONS_H

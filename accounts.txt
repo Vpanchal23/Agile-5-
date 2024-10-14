@@ -1,5 +1,5 @@
-681146 Walter HighInterestSavings 188500
-429043 Walter CertificateOfDeposit 100000
-618577 Landon Checking 150000
-640203 Drb Checking 1
-749186 Danielle CertificateOfDeposit 5000
+Walter 681146 1234 1 0
+Ryan 130389 1234 0 1
+Landon 618577 1234 1 0
+Drb 640203 1234 1 0
+Danielle 127571 1234 0 1
