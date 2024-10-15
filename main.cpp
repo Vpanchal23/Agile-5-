@@ -25,10 +25,13 @@ int main()
 
 	Node* current;
 	string name;
-	string psswrd;
+	//string psswrd;
 	bool invalid;
 	char choice;
 	int userChoice;
+	char password[100];
+	int i = 0;
+	int ch;
 
 	do
 	{
@@ -38,9 +41,22 @@ int main()
 		getline(cin, name);
 
 		cout << "Password: ";
-		getline(cin, psswrd);
+		while ((ch = getch()) != '\n')
+		{
+        if (ch == 127 || ch == 8) { // handle backspace
+            if (i != 0) {
+                i--;
+                printf("\b \b");
+            }
+        } else {
+            password[i++] = ch;
+            // echo the '*' to get feel of taking password 
+            printf("*");
+        }
+    	}
+		password[i] = '\0';
 
-		current = accountsList.confirmAccount(name, psswrd);
+		current = accountsList.confirmAccount(name, password);
 
 		if(current != nullptr)
 		{
@@ -87,8 +103,8 @@ int main()
 						cin.ignore(10000, '\n');
 						cout << "\033[1;31mInvalid input. Please enter a number between 1 and 7.\033[0m\n";
 						cout << "\n\033[1;33mPress Enter to return to the menu...\033[0m";
-						cin.ignore(1000, '\n');
 					}
+					cin.ignore(1000, '\n');
 
 						switch (userChoice)
 						{
@@ -133,8 +149,9 @@ int main()
 						cin.ignore(10000, '\n');
 						cout << "\033[1;31mInvalid input. Please enter a number between 1 and 8.\033[0m\n";
 						cout << "\n\033[1;33mPress Enter to return to the menu...\033[0m";
-						cin.ignore(1000, '\n');
 					}
+						cin.ignore(1000, '\n');
+
 						switch (userChoice)
 						{
 							case 1:

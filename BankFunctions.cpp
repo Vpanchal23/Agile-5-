@@ -98,6 +98,9 @@ void handleViewMyAccounts(Node* current) {
 
     // what would happen if there is no accounts?? working on it
     current->accounts.displayMyAccounts();
+
+	cout << "\n Press enter to continue ...";
+	cin.ignore(1000, '\n');
 }
 
 // Handle editing an account's balance
@@ -450,6 +453,9 @@ void handleViewAccounts(LinkedList& list) {
     cout << "\033[0m";  // Reset text
 
     list.displayAccounts();
+
+	cout << "\nPress enter to continue ...";
+	cin.ignore(1000, '\n');
 }
 
 void handleFundTransfers(LinkedList& accountsList, Node* current, bool employee, string acctFile) {
@@ -522,4 +528,26 @@ void handleFundTransfers(LinkedList& accountsList, Node* current, bool employee,
     accountsList.convertLinkedListToTextFile(acctFile);
 
     cout << "\033[1;32mTransfer successful!\033[0m\n";
+}
+
+int getch() {
+    int ch;
+    // struct to hold the terminal settings
+    struct termios old_settings, new_settings;
+    // take default setting in old_settings
+    tcgetattr(STDIN_FILENO, &old_settings);
+    // make of copy of it (Read my previous blog to know
+    // more about how to copy struct)
+    new_settings = old_settings;
+    // change the settings for by disabling ECHO mode
+    // read man page of termios.h for more settings info
+    new_settings.c_lflag &= ~(ICANON | ECHO);
+    // apply these new settings
+    tcsetattr(STDIN_FILENO, TCSANOW, &new_settings);
+    // now take the input in this mode
+    ch = getchar();
+    // reset back to default settings
+    tcsetattr(STDIN_FILENO, TCSANOW, &old_settings);
+
+    return ch;
 }

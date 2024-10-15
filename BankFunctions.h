@@ -2,6 +2,9 @@
 #define BANKFUNCTIONS_H
 
 #include "LinkedList.h"
+#include <termios.h>
+#include <unistd.h>
+#include <stdio.h>
 #include <string>
 
 // Display the main menu for customers with numbered options
@@ -36,5 +39,7 @@ void handleViewAccounts(LinkedList& list);
 
 // Function to handle transfers between bank accounts
 void handleFundTransfers(LinkedList& accountsList, Node* current, bool employee, string acctFile);
+
+int getch();
 
 #endif // BANKFUNCTIONS_H
