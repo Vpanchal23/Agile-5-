@@ -1,28 +1,34 @@
-# Compiler and flags
+# Compiler
 CXX = g++
-CXXFLAGS = -std=c++20 -Wall -Werror
+
+# Compiler flags
+CXXFLAGS = -std=c++11 -Wall
 
 # Executable name
-TARGET = bank_program
+TARGET = bank_system
 
 # Source files
-SRCS = main.cpp BankFunctions.cpp LinkedList.cpp Utils.cpp  # Ensure Utils.cpp is included here
+SRCS = main.cpp Utils.cpp Bank.cpp Account.cpp Client.cpp
 
-# Object files (generated from source files)
+# Object files
 OBJS = $(SRCS:.cpp=.o)
 
-# Header files (used for dependency tracking)
-DEPS = BankFunctions.h LinkedList.h Node.h Utils.h
+# Default target to build the program
+all: $(TARGET)
 
-# Default rule to compile and link the program
+# Link object files to create executable
 $(TARGET): $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $(TARGET) $(OBJS)
 
-# Rule to compile each .cpp file into an object file
-%.o: %.cpp $(DEPS)
+# Compile source files into object files
+%.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-# Clean rule to remove generated object files and the executable
-.PHONY: clean
+# Clean up build files
 clean:
 	rm -f $(OBJS) $(TARGET)
+
+# Run the program
+run: $(TARGET)
+	./$(TARGET)
+
