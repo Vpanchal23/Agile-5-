@@ -58,7 +58,6 @@ AccountNode* ClientNode::findAccount(const string& accountNumber) {
     return nullptr;
 }
 
-// Display accounts
 void ClientNode::displayAccounts() const {
     if (!accountHead) {
         cout << "\033[1;31mNo accounts available.\033[0m\n";
@@ -66,9 +65,9 @@ void ClientNode::displayAccounts() const {
     }
 
     cout << "\033[1;35m";  // Magenta text for table headers
-	 cout << "╔═════════════════════╦═════════════════════════════════╦═════════════════╗" << "\n";
+    cout << "╔═════════════════════╦═════════════════════════════════╦═════════════════╗" << "\n";
     cout << "║" << setw(20) << "Account Number" << " ║ "
-         << setw(31) << "Account Type"   << " ║ "
+         << setw(31) << "Account Type" << " ║ "
          << setw(15) << "Balance" << " ║\n";
     cout << "╠═════════════════════╬═════════════════════════════════╬═════════════════╣" << "\n";
     cout << "\033[0m";  // Reset text
@@ -76,14 +75,16 @@ void ClientNode::displayAccounts() const {
     AccountNode* account = accountHead;
     while (account) {
         cout << "\033[1;35m║\033[0m" << setw(20) << account->accountNumber << "\033[1;35m ║ \033[0m"
-             << setw(31) << account->accountType   << "\033[1;35m ║ \033[0m"
-             << setw(15) << fixed << setprecision(2) << account->balance << "\033[1;35m ║\033[0m\n";
+             << setw(31) << account->accountType;
+        cout << "\033[1;35m ║ \033[0m" << setw(15) << fixed << setprecision(2) << account->balance << "\033[1;35m ║\033[0m";
+		  if (account->accountType == "CertificateOfDeposit") {
+            cout << " Maturity: " << account->maturityMonths << " months\033[1;35m ║\033[0m";
+        }
+		  cout << endl;
+
         account = account->next;
     }
-	 cout << "\033[1;35m║\033[0m" << setw(20) << ' ' << "\033[1;35m ║ \033[0m"
-         << setw(31) << ' ' << "\033[1;35m ║ \033[0m"
-			<< setw(15) << ' ' << "\033[1;35m ║\033[0m\n";
-	 cout << "\033[1;35m"
-	      << "╚═════════════════════╩═════════════════════════════════╩═════════════════╝"
-			<< "\033[0m\n";
+    cout << "\033[1;35m"
+         << "╚═════════════════════╩═════════════════════════════════╩═════════════════╝"
+         << "\033[0m\n";
 }

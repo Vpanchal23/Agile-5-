@@ -1,4 +1,5 @@
 #include "Bank.h"
+#include "Utils.h"
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -65,20 +66,18 @@ bool Bank::loadFromFile(const std::string& filename) {
         std::string username, password, name;
         int ssn, role;
 
-        // Read and check the validity of each input
         if (!(iss >> username >> password >> ssn >> role)) {
             std::cerr << "\033[1;31mError: Malformed input in file!\033[0m" << std::endl;
-            continue;  // Skip malformed lines
+            continue;
         }
 
-        // Ensure the name field exists
         if (line.size() > static_cast<std::string::size_type>(iss.tellg()) && iss.tellg() != -1) {
             getline(iss, name);
             if (!name.empty()) {
-                name = name.substr(1, (name.length() - 2)); // Remove leading space if name is valid
+                name = name.substr(1); // Remove leading space if name is valid
             } else {
                 std::cerr << "\033[1;31mError: Name is empty!\033[0m" << std::endl;
-                continue;  // Skip invalid entries
+                continue;
             }
         } else {
             std::cerr << "\033[1;31mError: No name found in file!\033[0m" << std::endl;
@@ -87,12 +86,11 @@ bool Bank::loadFromFile(const std::string& filename) {
 
         ClientNode* client = new ClientNode(username, password, ssn, name, role);
 
-        // Now read accounts (handle if number of accounts is missing or malformed)
         std::string numAcct;
         int numAccounts;
         if (!(infile >> numAcct)) {
             std::cerr << "\033[1;31mError: Failed to read number of accounts!\033[0m" << std::endl;
-            continue;  // Skip this client if the number of accounts is invalid
+            continue;
         }
         numAcct = DataDecryption(numAcct);
         numAccounts = std::stoi(numAcct);
@@ -103,35 +101,38 @@ bool Bank::loadFromFile(const std::string& filename) {
             std::string accountLine;
             if (!getline(infile, accountLine)) {
                 std::cerr << "\033[1;31mError: Account entry missing!\033[0m" << std::endl;
-                break;  // Stop reading accounts if data is incomplete
+                break;
             }
             accountLine = DataDecryption(accountLine);
 
             std::istringstream accountStream(accountLine);
             std::string accountNumber, accountType;
             double balance;
+            int maturityMonths = 0;
 
-            // Ensure accountNumber and accountType are valid
             if (!(accountStream >> accountNumber >> accountType >> balance)) {
                 std::cerr << "\033[1;31mError: Malformed account data!\033[0m" << std::endl;
-                continue;  // Skip invalid account entries
+                continue;
             }
 
-            AccountNode* account = new AccountNode(accountNumber, accountType, balance);
+            if (accountType == "CertificateOfDeposit") {
+                accountStream >> maturityMonths;
+            }
+
+            AccountNode* account = new AccountNode(accountNumber, accountType, balance, maturityMonths);
             client->addAccount(account);
         }
 
-        // Insert the client into the linked list
         client->next = clientHead;
         clientHead = client;
 
-        // Read the empty line between clients
         getline(infile, line);
     }
 
-    infile.close();  // <-- This line was missing a proper place before
+    infile.close();
     return true;
 }
+
 
 // Save clients and accounts to a file
 bool Bank::saveToFile(const string& filename) {
@@ -143,13 +144,12 @@ bool Bank::saveToFile(const string& filename) {
 
     ClientNode* client = clientHead;
     while (client) {
-    	std::string ssn, role, line;
-    	ssn = std::to_string(client->ssn);
-    	role = std::to_string(client->role);
+        std::string ssn, role, line;
+        ssn = std::to_string(client->ssn);
+        role = std::to_string(client->role);
 
         line = client->username + " " + client->password + " " +
-        	   ssn              + " " + role             + " " +
-			   client->name;
+               ssn + " " + role + " " + client->name;
         line = DataEncryption(line);
 
         outfile << line << endl;
@@ -161,24 +161,22 @@ bool Bank::saveToFile(const string& filename) {
             ++numAccounts;
             account = account->next;
         }
-        std::string numAcct;
-        numAcct = std::to_string(numAccounts);
-
+        std::string numAcct = std::to_string(numAccounts);
         numAcct = DataEncryption(numAcct);
-
         outfile << numAcct << endl;
 
         account = client->accountHead;
         while (account) {
-        	std::string balance, line2;
-        	balance = std::to_string(account->balance);
+            std::string balance = std::to_string(account->balance);
+            std::string line2 = account->accountNumber + " " + account->accountType + " " + balance;
 
-        	line2 = account->accountNumber + " "
-                    + account->accountType + " "
-                    + balance;
-        	line2 = DataEncryption(line2);
+            // Include maturity months if it's a Certificate of Deposit
+            if (account->accountType == "CertificateOfDeposit") {
+                line2 += " " + std::to_string(account->maturityMonths);
+            }
 
-        	outfile << line2 << endl;
+            line2 = DataEncryption(line2);
+            outfile << line2 << endl;
 
             account = account->next;
         }
@@ -190,6 +188,7 @@ bool Bank::saveToFile(const string& filename) {
     outfile.close();
     return true;
 }
+
 
 // Display the starting page
 void Bank::displayStartingPage() {
@@ -307,29 +306,57 @@ ClientNode* Bank::createNewClient(ClientNode* current, string fileName) {
     cout << "\033[1;35mEnter Full Name: \033[0m";  // Purple for input prompt
     getline(cin, name);
 
-	cout << "\n\033[1;34m";
-	cout << borderTop;
-	cout << "║" << centerText("Select Login Account Type:", 73)      << "║\n";
-	cout << "║" <<  centerText("1. Client", 73)              << "║\n";
-	cout << "║" << centerText("2. Employee", 73)                << "║\n";
-	cout << "║" << centerText("3. Manager", 73)  << "║\n";
-	cout << borderBottom << endl;
-	cout << "\033[0m\n";
-	int role = getValidatedChoice(1, 3);
+	int role = 0;
 
-	switch (role) {
-		case 1:
-			role -= 1;
-			break;
-		case 2:
-			role -= 1;
-			break;
-		case 3:
-			role -= 1;
-			break;
-		default:
-			cout << "\033[1;31mInvalid input.\033[0m\n";
-		pauseForUser();
+	if(current->role == 1)
+	{
+		cout << "\n\033[1;34m";
+		cout << borderTop;
+		cout << "║" << centerText("Select Login Account Type:", 73)      << "║\n";
+		cout << "║" <<  centerText("1. Client", 73)              << "║\n";
+		cout << "║" << centerText("2. Employee", 73)                << "║\n";
+		cout << borderBottom << endl;
+		cout << "\033[0m\n";
+		role = getValidatedChoice(1, 2);
+
+		switch (role) {
+			case 1:
+				role -= 1;
+				break;
+			case 2:
+				role -= 1;
+				break;
+			default:
+				cout << "\033[1;31mInvalid input.\033[0m\n";
+			pauseForUser();
+		}
+	}
+	else
+	{
+		cout << "\n\033[1;34m";
+		cout << borderTop;
+		cout << "║" << centerText("Select Login Account Type:", 73)      << "║\n";
+		cout << "║" <<  centerText("1. Client", 73)              << "║\n";
+		cout << "║" << centerText("2. Employee", 73)                << "║\n";
+		cout << "║" << centerText("3. Manager", 73)  << "║\n";
+		cout << borderBottom << endl;
+		cout << "\033[0m\n";
+		role = getValidatedChoice(1, 3);
+
+		switch (role) {
+			case 1:
+				role -= 1;
+				break;
+			case 2:
+				role -= 1;
+				break;
+			case 3:
+				role -= 1;
+				break;
+			default:
+				cout << "\033[1;31mInvalid input.\033[0m\n";
+			pauseForUser();
+		}
 	}
 
     ClientNode* newClient = new ClientNode(username, password, ssn, name, role);
@@ -342,15 +369,6 @@ ClientNode* Bank::createNewClient(ClientNode* current, string fileName) {
 	 {
 		cerr << "\033[1;31mFailed to save data to file.\033[0m\n";
 	 }
-
-    // Prompt to add an account immediately
-    cout << "\033[1;35mWould you like to add an account for this client now? (y/n): \033[0m";  // Purple input prompt
-    char choice;
-    cin >> choice;
-    cin.ignore(numeric_limits<streamsize>::max(), '\n');
-    if (choice == 'y' || choice == 'Y') {
-        handleAddAccountToClient(current, fileName, newClient);
-    }
 
     return newClient;
 }
@@ -365,7 +383,17 @@ void Bank::employeeMenu(ClientNode* employee, string fileName) {
     bool backToMainMenu = false;
     while (!backToMainMenu) {
         clearScreen();
-        displayMenuHeader("Employee Menu");
+		  string header;
+
+		  switch(employee->role)
+		  {
+				case 1:
+					header = employee->name + ": Employee Menu";
+					break;
+				default:
+					header = employee->name + ": Manager Menu";
+		  }
+        displayMenuHeader(header);
 
         const string borderMiddle = "╠═════════════════════════════════════════════════════════════════════════╣\n";
         const string borderBottom = "╚═════════════════════════════════════════════════════════════════════════╝\n";
@@ -413,6 +441,7 @@ void Bank::employeeMenu(ClientNode* employee, string fileName) {
                 break;
             case 9:
                 backToMainMenu = true;
+                logAction(employee->username, "Logout", "Employee logged out.");
                 break;
             default:
                 cout << "\033[1;31mInvalid choice. Please try again.\033[0m\n";
@@ -429,7 +458,8 @@ void Bank::clientMenu(ClientNode* client, string fileName) {
     bool logout = false;
     while (!logout) {
         clearScreen();
-        displayMenuHeader("Client Menu");
+		  string header = client->name + ": Client Menu";
+        displayMenuHeader(header);
 
         const string borderMiddle = "╠═════════════════════════════════════════════════════════════════════════╣\n";
         const string borderBottom = "╚═════════════════════════════════════════════════════════════════════════╝\n";
@@ -460,6 +490,7 @@ void Bank::clientMenu(ClientNode* client, string fileName) {
                 break;
             case 5:
                 logout = true;
+                logAction(client->username, "Logout", "User logged out.");
                 break;
             default:
                 cout << "\033[1;31mInvalid choice. Please try again.\033[0m\n";
@@ -583,98 +614,113 @@ void Bank::handleDeleteClient(ClientNode* employee, string fileName) {
 }
 
 void Bank::handleAddAccountToClient(ClientNode* employee, string fileName, ClientNode* client2) {
-	string name;
-	int ssn;
-	//deadlocking
-	if(!ReadDeadlockBool(name, ssn))
-	{
-	SavePersonUsingData(employee);
+    string name;
+    int ssn;
 
-	clearScreen();
-	displayMenuHeader("Add An Account");
+    // Deadlocking check
+    if(!ReadDeadlockBool(name, ssn)) {
+        SavePersonUsingData(employee);
 
-    if (!client2) {
-        cout << "Enter the client's username: ";
-        string username;
-        getline(cin, username);
+        clearScreen();
+        displayMenuHeader("Add An Account");
 
-        client2 = findClientByUsername(username);
         if (!client2) {
-            cout << "\033[1;31mClient not found.\033[0m\n";
-            pauseForUser();
-            return;
+            cout << "Enter the client's username: ";
+            string username;
+            getline(cin, username);
+
+            client2 = findClientByUsername(username);
+            if (!client2) {
+                cout << "\033[1;31mClient not found.\033[0m\n";
+                pauseForUser();
+                return;
+            }
         }
-    }
 
-    // Now add account to client
-    const string borderTop    = "╔═════════════════════════════════════════════════════════════════════════╗";
-    const string borderBottom = "╚═════════════════════════════════════════════════════════════════════════╝\n";
+        // Display account type options
+        const string borderTop    = "╔═════════════════════════════════════════════════════════════════════════╗";
+        const string borderBottom = "╚═════════════════════════════════════════════════════════════════════════╝\n";
 
-    string accountNumber = generateAccountNumber();
-    string accountType;
-    double balance;
+        string accountNumber = generateAccountNumber();
+        string accountType;
+        double balance;
+        int maturityMonths = 0;
 
-    cout << "\033[1;34m";
-    cout << borderTop << endl;
-    cout << "║" << centerText("Select Account Type:", 73)      << "║\n";
-    cout << "║" <<  centerText("1. Checking", 73)              << "║\n";
-    cout << "║" << centerText("2. Savings", 73)                << "║\n";
-    cout << "║" << centerText("3. High Interest Savings", 73)  << "║\n";
-    cout << "║" << centerText("4. Certificate of Deposit", 73) << "║\n";
-    cout << borderBottom;
-    cout << "\033[0m\n";
+        cout << "\033[1;34m";
+        cout << borderTop << endl;
+        cout << "║" << centerText("Select Account Type:", 73) << "║\n";
+        cout << "║" << centerText("1. Savings Account", 73) << "║\n";
+        cout << "║" << centerText("2. High Interest Savings", 73) << "║\n";
+        cout << "║" << centerText("3. No Service Charge Checking", 73) << "║\n";
+        cout << "║" << centerText("4. Service Charge Checking", 73) << "║\n";
+        cout << "║" << centerText("5. Higher Interest Checking", 73) << "║\n";
+        cout << "║" << centerText("6. Certificate of Deposit", 73) << "║\n";
+        cout << borderBottom;
+        cout << "\033[0m\n";
 
-    cout << "Generated Account Number: " << accountNumber << endl;
+        cout << "Generated Account Number: " << accountNumber << endl;
 
-    int typeChoice = getValidatedChoice(1, 4);
+        int typeChoice = getValidatedChoice(1, 6);
 
-    switch (typeChoice) {
-        case 1:
-            accountType = "Checking";
-            break;
-        case 2:
-            accountType = "Savings";
-            break;
-        case 3:
-            accountType = "HighInterestSavings";
-            break;
-        case 4:
-            accountType = "CertificateOfDeposit";
-            break;
-        default:
-            cout << "\033[1;31mInvalid account type.\033[0m\n";
-            pauseForUser();
-            return;
-    }
+        switch (typeChoice) {
+            case 1:
+                accountType = "SavingsAccount";
+                break;
+            case 2:
+                accountType = "HighInterestSavings";
+                break;
+            case 3:
+                accountType = "NoServiceChargeChecking";
+                break;
+            case 4:
+                accountType = "ServiceChargeChecking";
+                break;
+            case 5:
+                accountType = "HigherInterestChecking";
+                break;
+            case 6:
+                accountType = "CertificateOfDeposit";
+                cout << "Enter maturity period in months: ";
+                while (!(cin >> maturityMonths) || maturityMonths <= 0) {
+                    cin.clear();
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    cout << "\033[1;31mInvalid input. Please enter a positive number for maturity months.\033[0m\n";
+                    cout << "Enter maturity period in months: ";
+                }
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                break;
+            default:
+                cout << "\033[1;31mInvalid account type.\033[0m\n";
+                pauseForUser();
+                return;
+        }
 
-    cout << "Enter Initial Balance: ";
-    while (!(cin >> balance) || balance < 0) {
-        cin.clear();
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
-        cout << "\033[1;31mInvalid amount. Please enter a non-negative number.\033[0m\n";
         cout << "Enter Initial Balance: ";
+        while (!(cin >> balance) || balance < 0) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "\033[1;31mInvalid amount. Please enter a non-negative number.\033[0m\n";
+            cout << "Enter Initial Balance: ";
+        }
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+        AccountNode* newAccount = new AccountNode(accountNumber, accountType, balance, maturityMonths);
+        client2->addAccount(newAccount);
+        cout << "\033[1;32mAccount added successfully.\033[0m\n";
+
+        if (!saveToFile(fileName)) {
+            cerr << "\033[1;31mFailed to save data to file.\033[0m\n";
+        }
+
+        pauseForUser();
+
+        FreeDeadlock();
+    } else {
+        cout << "File is being used by " << name << ", ssn: " << ssn << endl;
+        cin.ignore(1000, '\n');
     }
-    cin.ignore(numeric_limits<streamsize>::max(), '\n');
-
-    AccountNode* newAccount = new AccountNode(accountNumber, accountType, balance);
-    client2->addAccount(newAccount);
-    cout << "\033[1;32mAccount added successfully.\033[0m\n";
-
-	if(!saveToFile(fileName))
-	 {
-		cerr << "\033[1;31mFailed to save data to file.\033[0m\n";
-	 }
-
-    pauseForUser();
-
-    FreeDeadlock();
-	}
-	else
-	{
-		cout << "File is being use by " << name << ", ssn: " << ssn << endl;
-		cin.ignore(1000, '\n');
-	}
 }
+
 
 void Bank::handleDeleteAccountFromClient(ClientNode* employee, string fileName) {
 	string name;
@@ -758,6 +804,7 @@ void Bank::handleDepositToAccount(ClientNode* employee, string fileName) {
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
 
             account->deposit(amount);
+            logAction(username, "Deposit", "Deposited " + to_string(amount) + " to account " + accountNumber);
             cout << "\033[1;32mDeposit successful.\033[0m\n";
 
 				if(!saveToFile(fileName))
@@ -819,6 +866,7 @@ void Bank::handleWithdrawFromAccount(ClientNode* employee, string fileName) {
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
 
             account->withdraw(amount);
+            logAction(username, "Withdraw", "Withdrew " + to_string(amount) + " from account " + accountNumber);
             cout << "\033[1;32mWithdrawal successful.\033[0m\n";
 
 				if(!saveToFile(fileName))
@@ -923,24 +971,38 @@ void Bank::handleClientWithdraw(ClientNode* client, string fileName) {
 
     AccountNode* account = client->findAccount(accountNumber);
     if (account) {
-        double amount;
-        cout << "Enter the amount to withdraw: ";
-        while (!(cin >> amount) || amount <= 0 || amount > account->balance) {
-            cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
-            cout << "\033[1;31mInvalid amount. Please enter a positive number not exceeding your balance.\033[0m\n";
-            cout << "Enter the amount to withdraw: ";
-        }
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+		  if(account->maturityMonths <= 0)
+		  {
+			  if(account->accountType != "CertificateOfDeposit")
+			  {
+		        double amount;
+		        cout << "Enter the amount to withdraw: ";
+		        while (!(cin >> amount) || amount <= 0 || amount > account->balance) {
+		            cin.clear();
+		            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+		            cout << "\033[1;31mInvalid amount. Please enter a positive number not exceeding your balance.\033[0m\n";
+		            cout << "Enter the amount to withdraw: ";
+		        }
+		        cin.ignore(numeric_limits<streamsize>::max(), '\n');
 
-        account->withdraw(amount);
+		        account->withdraw(amount);
+			  }
+			  else
+			  {
+					account->withdraw(account->balance);
+			  }
 
-			if(!saveToFile(fileName))
-			 {
-				cerr << "\033[1;31mFailed to save data to file.\033[0m\n";
-			 }
+				if(!saveToFile(fileName))
+				 {
+					cerr << "\033[1;31mFailed to save data to file.\033[0m\n";
+				 }
 
-        cout << "\033[1;32mWithdrawal successful.\033[0m\n";
+	        cout << "\033[1;32mWithdrawal successful.\033[0m\n";
+		  }
+		  else
+		  {
+				cout << "\033[1;31mCD has not been matured. No Withdrawal.\033[0m\n";
+		  }
     } else {
         cout << "\033[1;31mAccount not found.\033[0m\n";
     }
@@ -1009,12 +1071,12 @@ void Bank::SavePersonUsingData(ClientNode *head)
 
 ClientNode* Bank::LoginSystem() {
 	bool leave = false;
-//	bool invalid;
+    //	bool invalid;
     do
     {
 		clearScreen();
 		string username, password;
-		displayMenuHeader("Client Login");
+		displayMenuHeader("Login System");
 		cout << "\033[1;35m" << "Username: " << "\033[0m";  // Purple input prompt for Username
 		getline(cin, username);
 		cout << "\033[1;35m" << "Password: " << "\033[0m";  // Purple input prompt for Password
@@ -1025,6 +1087,7 @@ ClientNode* Bank::LoginSystem() {
 
 		if (client && client->password == password) {
 			cout << endl << endl;
+		    logAction(username, "Login", "User logged in.");
 			return client;
 		} else {
 			return nullptr;

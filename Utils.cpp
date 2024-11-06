@@ -124,3 +124,17 @@ std::string DataDecryption(std::string data)
 
 	return decryptedMessage;
 }
+
+/*
+ * Logs user actions with a timestamp, username, action type, and additional details.
+ * This function centralizes logging to a specific log file, "user_activity_log.txt".
+ *
+ * Parameters:
+ * - username: Name of the user performing the action
+ * - action: Description of the action (e.g., "Login", "Deposit")
+ * - details: Additional details about the action
+ */
+void logAction(const std::string& username, const std::string& action, const std::string& details) {
+	time_t now = time(nullptr);
+	printToTxt("user_activity_log.txt", ctime(&now), "- User:", username, "- Action:", action, "- Details:", details);
+}

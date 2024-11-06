@@ -1,8 +1,8 @@
 #include "Account.h"
 
 // Constructor
-AccountNode::AccountNode(const std::string& accountNumber, const std::string& accountType, double balance)
-    : accountNumber(accountNumber), accountType(accountType), balance(balance), next(nullptr) {}
+AccountNode::AccountNode(const std::string& accountNumber, const std::string& accountType, double balance, int maturityMonths)
+    : accountNumber(accountNumber), accountType(accountType), balance(balance), maturityMonths(maturityMonths), next(nullptr) {}
 
 // Destructor
 AccountNode::~AccountNode() {

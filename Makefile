@@ -2,7 +2,7 @@
 CXX = g++
 
 # Compiler flags
-CXXFLAGS = -std=c++11 -Wall
+CXXFLAGS = -std=c++20 -Wall
 
 # Executable name
 TARGET = bank_system
